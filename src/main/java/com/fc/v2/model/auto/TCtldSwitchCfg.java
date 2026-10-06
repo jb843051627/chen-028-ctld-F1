@@ -101,6 +101,11 @@ public class TCtldSwitchCfg implements Serializable {
     @ApiModelProperty(value = "还差几处（轧出来，不留填数的空位）")
     private Integer lackNum;
 
+    /** 改三态落笔人（建行那笔沉 create_by，三态每改一次这笔跟着沉） */
+    @TableField("kind_by")
+    @ApiModelProperty(value = "改三态落笔人（建行那笔沉 create_by，三态每改一次这笔跟着沉）")
+    private String kindBy;
+
     /** 启用那一一日 */
     @TableField("eff_start")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
@@ -113,9 +118,9 @@ public class TCtldSwitchCfg implements Serializable {
     @ApiModelProperty(value = "交班那一一日(不含)")
     private Date effEnd;
 
-    /** 行的情形 0在位 1已撤下 */
+    /** 走到哪一级 0待上 1已上 2压行（由系统按走完的步数自己数，屏上录入的不作数；旧行为 null 按待上接） */
     @TableField("status")
-    @ApiModelProperty(value = "行的情形 0在位 1已撤下")
+    @ApiModelProperty(value = "走到哪一级 0待上 1已上 2压行（由系统按走完的步数自己数）")
     private Integer status;
 
     /** 删除标记 0正常 1删除 */
@@ -260,6 +265,14 @@ public class TCtldSwitchCfg implements Serializable {
 
     public void setLackNum(Integer lackNum) {
         this.lackNum = lackNum;
+    }
+
+    public String getKindBy() {
+        return kindBy;
+    }
+
+    public void setKindBy(String kindBy) {
+        this.kindBy = kindBy;
     }
 
     public Date getEffStart() {

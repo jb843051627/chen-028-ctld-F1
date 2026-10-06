@@ -19,6 +19,23 @@ fuce:
   demo-enabled: false
   #漂亮得拖动验证码 默认false普通验证码、true滚动验证码
   roll-verification: false
+  # ctld 产地准出口径配置台
+  ctld:
+    # 配置台一屏几条（能一路往下翻）
+    switch-page-size: 10
+    # 县局岗角色名：三层都看得见，范围仍限划归它的分区
+    county-roles:
+      - 县局岗
+    # 不受分层范围约束的角色
+    admin-roles:
+      - 管理员
+    # 本层值守岗角色名 → 分区册层类别（只看得见挂靠本层的行）
+    duty-layer-roles:
+      甲层值守岗: 甲层
+      乙层值守岗: 乙层
+      丙层值守岗: 丙层
+    # 县局岗（或具体账号）划归的分区代号名单，值为逗号分隔；不写则不额外收窄
+    user-zones: {}
   # 文件路径 示例（ Windows配置D:/v2/uploadPath，Linux配置 /home/v2/uploadPath）
   profile: D:/v2/uploadPath
 #tomcat config

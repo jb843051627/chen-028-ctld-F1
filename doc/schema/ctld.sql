@@ -111,7 +111,8 @@ CREATE TABLE IF NOT EXISTS t_ctld_switch_cfg (
   lack_num int DEFAULT NULL COMMENT '还差几处（轧出来，不留填数的空位）',
   eff_start datetime DEFAULT NULL COMMENT '启用那一一日',
   eff_end datetime DEFAULT NULL COMMENT '交班那一一日(不含)',
-  status int DEFAULT NULL COMMENT '走到哪一级 0待核对 1已核对 2已压住',
+  status int DEFAULT NULL COMMENT '走到哪一级 0待上 1已上 2压行（由系统数，旧行为空按待上接）',
+  kind_by varchar(64) DEFAULT NULL COMMENT '改三态落笔人（建行笔沉 create_by）',
   del_flag int DEFAULT '0' COMMENT '删除标记 0正常 1删除',
   create_by varchar(64) DEFAULT NULL COMMENT '创建者',
   create_time datetime DEFAULT NULL COMMENT '创建时间',
@@ -161,4 +162,10 @@ CREATE TABLE IF NOT EXISTS t_ctld_zone_book (
 INSERT IGNORE INTO t_ctld_zone_book (id, zone_no, zone_name, zone_kind, road_name, status, del_flag, create_by, create_time)
 VALUES (0, 'QC00', '澜原省渠州市浚安县北浚镇东片（甲层稳产好地，在册）', '甲层', '澜原省—渠州市—浚安县—北浚镇—东片', 0, 0, 'seed', NOW()),
        (1, 'QC01', '南浚镇西片·并走撤出的旧分区（已撤出）', '丙层', '澜原省—渠州市—浚安县—南浚镇—西片', 1, 0, 'seed', NOW());
+
+-- 存量库升级（status 语义改为 0待上/1已上/2压行；新增 kind_by 沉改三态落笔人）：
+-- ALTER TABLE t_ctld_switch_cfg
+--   MODIFY COLUMN status int DEFAULT NULL COMMENT '走到哪一级 0待上 1已上 2压行（由系统数，旧行为空按待上接）',
+--   ADD COLUMN kind_by varchar(64) DEFAULT NULL COMMENT '改三态落笔人（建行笔沉 create_by）' AFTER lack_num;
+
 
