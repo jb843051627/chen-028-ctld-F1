@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS t_ctld_switch_cfg (
   gray_num int DEFAULT NULL COMMENT '开桶个数 0..10（按地块码尾数落桶，写 3 即尾数 0/1/2 走新口径）',
   level_kind varchar(32) DEFAULT NULL COMMENT '定档层级（省定／市定／县定／系统兜底）',
   parent_no varchar(64) DEFAULT NULL COMMENT '继承自哪一项',
-  zone_id int DEFAULT NULL COMMENT '挂在哪一个管控分区名下',
+  zone_id bigint DEFAULT NULL COMMENT '挂在哪一个管控分区名下',
   zone_no varchar(64) DEFAULT NULL COMMENT '适用的管控分区代号（冗余自分区册）',
   zone_name varchar(128) DEFAULT NULL COMMENT '分区全称（冗余一份，以分区册为准回写）',
   ver_no int DEFAULT NULL COMMENT '改动次序（数值大的先说话）',
@@ -113,13 +113,16 @@ CREATE TABLE IF NOT EXISTS t_ctld_switch_cfg (
   eff_end datetime DEFAULT NULL COMMENT '交班那一一日(不含)',
   status int DEFAULT NULL COMMENT '走到哪一级 0待核对 1已核对 2已压住',
   del_flag int DEFAULT '0' COMMENT '删除标记 0正常 1删除',
-  create_by varchar(64) DEFAULT NULL COMMENT '创建者',
+  create_by varchar(64) DEFAULT NULL COMMENT '建行的是哪一位',
   create_time datetime DEFAULT NULL COMMENT '创建时间',
   update_by varchar(64) DEFAULT NULL COMMENT '更新者',
   update_time datetime DEFAULT NULL COMMENT '更新时间',
+  kind_by varchar(64) DEFAULT NULL COMMENT '改三态的是哪一位（每次 sw_kind 变动落一笔）',
   remark varchar(500) DEFAULT NULL COMMENT '备注',
   content varchar(255) DEFAULT NULL COMMENT '核验串（定形后不被页面覆写）',
-  PRIMARY KEY (id)
+  PRIMARY KEY (id),
+  KEY idx_ctld_switch_zone_name (zone_no, sw_name, del_flag),
+  KEY idx_ctld_switch_level (level_kind, sw_name, del_flag)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='产地准出核验口径切换开关表';
 
 CREATE TABLE IF NOT EXISTS t_ctld_task_item (
@@ -161,4 +164,46 @@ CREATE TABLE IF NOT EXISTS t_ctld_zone_book (
 INSERT IGNORE INTO t_ctld_zone_book (id, zone_no, zone_name, zone_kind, road_name, status, del_flag, create_by, create_time)
 VALUES (0, 'QC00', '澜原省渠州市浚安县北浚镇东片（甲层稳产好地，在册）', '甲层', '澜原省—渠州市—浚安县—北浚镇—东片', 0, 0, 'seed', NOW()),
        (1, 'QC01', '南浚镇西片·并走撤出的旧分区（已撤出）', '丙层', '澜原省—渠州市—浚安县—南浚镇—西片', 1, 0, 'seed', NOW());
+
+-- 切换开关配置台：按钮/查询权限（与 Controller @RequiresPermissions 逐一对齐）
+INSERT IGNORE INTO t_sys_permission (id, name, descripion, url, is_blank, pid, perms, type, icon, order_num, visible, create_by, create_time)
+VALUES (9001, '核验口径切换开关', '配置台页面', '/CtldSwitchCfgController/view', 0, 0, 'ctld:ctldSwitchCfg:view', 1, 'icon icon-shield', 90, 0, 'seed', NOW()),
+       (9002, '切换开关集合查询', '分页查询', '/CtldSwitchCfgController/list', 0, 9001, 'ctld:ctldSwitchCfg:list', 2, '', 1, 0, 'seed', NOW()),
+       (9003, '切换开关新增', '新增一行', '/CtldSwitchCfgController/add', 0, 9001, 'ctld:ctldSwitchCfg:add', 2, '', 2, 0, 'seed', NOW()),
+       (9004, '切换开关修改', '修改保存', '/CtldSwitchCfgController/edit', 0, 9001, 'ctld:ctldSwitchCfg:edit', 2, '', 3, 0, 'seed', NOW()),
+       (9005, '切换开关上报', '待上→已上→压行', '/CtldSwitchCfgController/advance', 0, 9001, 'ctld:ctldSwitchCfg:advance', 2, '', 4, 0, 'seed', NOW()),
+       (9006, '切换开关退回', '已上→待上', '/CtldSwitchCfgController/revert', 0, 9001, 'ctld:ctldSwitchCfg:revert', 2, '', 5, 0, 'seed', NOW()),
+       (9007, '切换开关删除', '删除', '/CtldSwitchCfgController/remove', 0, 9001, 'ctld:ctldSwitchCfg:remove', 2, '', 6, 0, 'seed', NOW()),
+       (9008, '切换开关回话', '按地块问口径', '/CtldSwitchCfgController/resolve', 0, 9001, 'ctld:ctldSwitchCfg:resolve', 2, '', 7, 0, 'seed', NOW());
+
+-- 三层值守岗位（角色名即层级，权限按层切）：县局岗三层可见，省/市值守只看本层
+INSERT IGNORE INTO t_sys_role (id, name, create_by, create_time)
+VALUES (9101, '产地准出·县局岗', 'seed', NOW()),
+       (9102, '产地准出·市级值守', 'seed', NOW()),
+       (9103, '产地准出·省级值守', 'seed', NOW());
+
+-- 县局岗领全部按钮权限；省、市值守岗只领看与问
+INSERT IGNORE INTO t_sys_permission_role (id, role_id, permission_id)
+VALUES (9401, 9101, 9001),(9402, 9101, 9002),(9403, 9101, 9003),(9404, 9101, 9004),
+       (9405, 9101, 9005),(9406, 9101, 9006),(9407, 9101, 9007),(9408, 9101, 9008),
+       (9409, 9102, 9001),(9410, 9102, 9002),(9411, 9102, 9008),
+       (9412, 9103, 9001),(9413, 9103, 9002),(9414, 9103, 9008);
+
+-- admin 兼县局岗
+INSERT IGNORE INTO t_sys_role_user (id, sys_user_id, sys_role_id) VALUES (9201, 1, 9101);
+
+-- 岗位与分区的划归：县局岗/值守岗只看得见划归到自己名下的分区
+CREATE TABLE IF NOT EXISTS t_ctld_user_zone (
+  id bigint NOT NULL COMMENT '主键',
+  user_id bigint NOT NULL COMMENT '值守账号',
+  zone_id bigint NOT NULL COMMENT '划归的分区（t_ctld_zone_book.id）',
+  del_flag int DEFAULT '0' COMMENT '删除标记 0正常 1删除',
+  create_by varchar(64) DEFAULT NULL COMMENT '创建者',
+  create_time datetime DEFAULT NULL COMMENT '创建时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_ctld_user_zone (user_id, zone_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='值守账号与管控分区划归表';
+
+INSERT IGNORE INTO t_ctld_user_zone (id, user_id, zone_id, del_flag, create_by, create_time)
+VALUES (9301, 1, 0, 0, 'seed', NOW());
 

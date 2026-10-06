@@ -21,6 +21,8 @@ fuce:
   roll-verification: false
   # 文件路径 示例（ Windows配置D:/v2/uploadPath，Linux配置 /home/v2/uploadPath）
   profile: D:/v2/uploadPath
+  # 产地准出核验口径切换开关配置台：一屏几条，由县局定
+  ctld-switch-page-size: 10
 #tomcat config
 server :
   port : 8080

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="include :: header('切换开关新增一行')"/>
+</head>
+<body>
+<form class="layui-form">
+    <div class="mainBox">
+        <div class="main-container">
+            <div class="layui-form-item">
+                <label class="layui-form-label">切换名目</label>
+                <div class="layui-input-block">
+                    <input type="text" name="swName" autocomplete="off" placeholder="同季配对回话／逐条人工签认／两式并行" class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">定档层级</label>
+                <div class="layui-input-block">
+                    <select name="levelKind" lay-filter="levelKind" lay-verify="required">
+                        <option value="县定">县定（挂管控分区）</option>
+                        <option value="市定">市定</option>
+                        <option value="省定">省定</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="layui-form-item" id="zoneItem">
+                <label class="layui-form-label">分区代号</label>
+                <div class="layui-input-block">
+                    <input type="text" name="zoneNo" autocomplete="off" placeholder="拿分区册里的代号，如 QC00；已并走撤出的段收不进" class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">开关三态</label>
+                <div class="layui-input-block">
+                    <select name="swKind" lay-filter="swKind" lay-verify="required">
+                        <option value="0">0 一律走旧口径</option>
+                        <option value="1">1 一律走新口径</option>
+                        <option value="2">2 按桶推进</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="layui-form-item" id="grayItem" style="display:none">
+                <label class="layui-form-label">开桶个数</label>
+                <div class="layui-input-block">
+                    <input type="number" name="grayNum" min="0" max="10" autocomplete="off" placeholder="只认 0 到 10；写 3 即尾数 0、1、2 落新口径" class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">应覆盖处数</label>
+                <div class="layui-input-inline">
+                    <input type="number" name="crtNum" min="0" autocomplete="off" placeholder="必填、非负整数" class="layui-input">
+                </div>
+                <label class="layui-form-label">已切处数</label>
+                <div class="layui-input-inline">
+                    <input type="number" name="hitNum" min="0" value="0" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">还差几处</label>
+                <div class="layui-input-block">
+                    <input type="text" id="lackView" class="layui-input" disabled placeholder="由应覆盖减已切，落库前系统重轧，不设输入格">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">备注</label>
+                <div class="layui-input-block">
+                    <textarea name="remark" class="layui-textarea"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="bottom">
+        <div class="button-container">
+            <button type="submit" class="layui-btn layui-btn-normal layui-btn-sm" lay-submit lay-filter="switchCfg-save">
+                <i class="layui-icon layui-icon-ok"></i> 提交
+            </button>
+            <button type="reset" class="layui-btn layui-btn-primary layui-btn-sm">
+                <i class="layui-icon layui-icon-refresh"></i> 重置
+            </button>
+        </div>
+    </div>
+</form>
+<th:block th:include="include :: footer"/>
+<script>
+    layui.use(['form', 'jquery'], function () {
+        let form = layui.form;
+        let $ = layui.jquery;
+        let MODULE_PATH = rootPath + "/CtldSwitchCfgController";
+
+        function syncView() {
+            let kind = parseInt($('select[name="swKind"]').val(), 10);
+            $('#grayItem').toggle(kind === 2);
+            if (kind !== 2) {
+                $('input[name="grayNum"]').val('');
+            }
+            let crt = parseInt($('input[name="crtNum"]').val(), 10);
+            let hit = parseInt($('input[name="hitNum"]').val(), 10);
+            if (!isNaN(crt) && !isNaN(hit) && hit <= crt) {
+                $('#lackView').val(crt - hit);
+            } else {
+                $('#lackView').val('');
+            }
+            let county = $('select[name="levelKind"]').val() === '县定';
+            $('#zoneItem').toggle(county);
+            if (!county) {
+                $('input[name="zoneNo"]').val('');
+            }
+        }
+
+        form.on('select(swKind)', syncView);
+        form.on('select(levelKind)', syncView);
+        $(document).on('input', 'input[name="crtNum"],input[name="hitNum"]', syncView);
+
+        form.on('submit(switchCfg-save)', function (data) {
+            $.ajax({
+                url: MODULE_PATH + '/add',
+                data: data.field,
+                dataType: 'json',
+                type: 'post',
+                success: function (result) {
+                    if (result.code == 200) {
+                        layer.msg(result.msg || '已落库', {icon: 1, time: 1000}, function () {
+                            parent.layer.close(parent.layer.getFrameIndex(window.name));
+                            parent.layui.table.reload("switchCfg-table");
+                        });
+                    } else {
+                        layer.msg(result.msg, {icon: 2, time: 3000});
+                    }
+                }
+            });
+            return false;
+        });
+
+        syncView();
+    });
+</script>
+</body>
+</html>

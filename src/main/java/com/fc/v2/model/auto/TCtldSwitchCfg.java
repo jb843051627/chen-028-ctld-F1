@@ -66,10 +66,10 @@ public class TCtldSwitchCfg implements Serializable {
     @ApiModelProperty(value = "继承自哪一项")
     private String parentNo;
 
-    /** 挂在哪一个管控分区名下 */
+    /** 挂在哪一个管控分区名下（对齐分区册主键 bigint） */
     @TableField("zone_id")
     @ApiModelProperty(value = "挂在哪一个管控分区名下")
-    private Integer zoneId;
+    private Long zoneId;
 
     /** 适用的管控分区代号（冗余自分区册） */
     @TableField("zone_no")
@@ -145,6 +145,11 @@ public class TCtldSwitchCfg implements Serializable {
     @ApiModelProperty(value = "更新时间")
     private Date updateTime;
 
+    /** 改三态的是哪一位（每次三态变动落一笔，不随别的改动挪） */
+    @TableField("kind_by")
+    @ApiModelProperty(value = "改三态的是哪一位")
+    private String kindBy;
+
     /** 备注 */
     @TableField("remark")
     @ApiModelProperty(value = "备注")
@@ -206,11 +211,11 @@ public class TCtldSwitchCfg implements Serializable {
         this.parentNo = parentNo;
     }
 
-    public Integer getZoneId() {
+    public Long getZoneId() {
         return zoneId;
     }
 
-    public void setZoneId(Integer zoneId) {
+    public void setZoneId(Long zoneId) {
         this.zoneId = zoneId;
     }
 
@@ -332,6 +337,14 @@ public class TCtldSwitchCfg implements Serializable {
 
     public void setUpdateTime(Date updateTime) {
         this.updateTime = updateTime;
+    }
+
+    public String getKindBy() {
+        return kindBy;
+    }
+
+    public void setKindBy(String kindBy) {
+        this.kindBy = kindBy;
     }
 
     public String getRemark() {

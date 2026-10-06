@@ -32,6 +32,8 @@ public class V2Config
     private Boolean rollVerification;
     /** 文件路径 **/
     private String profile;
+    /** 配置台一屏几条（县局写在配置里），默认 10 */
+    private Integer ctldSwitchPageSize = 10;
 
 	public String getName() {
 		return name;
@@ -94,6 +96,14 @@ public class V2Config
 
 	public void setProfile(String profile) {
 		this.profile = profile;
+	}
+
+	public Integer getCtldSwitchPageSize() {
+		return ctldSwitchPageSize == null || ctldSwitchPageSize <= 0 ? 10 : ctldSwitchPageSize;
+	}
+
+	public void setCtldSwitchPageSize(Integer ctldSwitchPageSize) {
+		this.ctldSwitchPageSize = ctldSwitchPageSize;
 	}
 
 	/**

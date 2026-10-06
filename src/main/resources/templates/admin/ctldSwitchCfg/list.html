@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('核验口径切换开关配置台')"/>
+</head>
+<body class="pear-container">
+<div class="layui-card">
+    <div class="layui-card-body">
+        <form class="layui-form" action="">
+            <div class="layui-form-item">
+                <label class="layui-form-label">分区代号</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="zoneNo" placeholder="全等或前缀" class="layui-input">
+                </div>
+                <label class="layui-form-label">切换名目</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="swName" placeholder="全等或前缀" class="layui-input">
+                </div>
+                <label class="layui-form-label">开关三态</label>
+                <div class="layui-input-inline">
+                    <select name="swKind">
+                        <option value="">全部</option>
+                        <option value="0">0 一律旧口径</option>
+                        <option value="1">1 一律新口径</option>
+                        <option value="2">2 按桶推进</option>
+                    </select>
+                </div>
+                <div class="layui-input-inline">
+                    <input type="checkbox" name="prefixMatch" value="true" lay-skin="primary" title="前缀匹配">
+                </div>
+                <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="switchCfg-query">
+                    <i class="layui-icon layui-icon-search"></i> 查询
+                </button>
+                <button type="reset" class="pear-btn pear-btn-md">
+                    <i class="layui-icon layui-icon-refresh"></i> 重置
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="layui-card">
+    <div class="layui-card-body">
+        <table id="switchCfg-table" lay-filter="switchCfg-table"></table>
+    </div>
+</div>
+</body>
+
+<script type="text/html" id="switchCfg-toolbar">
+    <button shiro:hasPermission="ctld:ctldSwitchCfg:add" class="pear-btn pear-btn-primary pear-btn-md" lay-event="add">
+        <i class="layui-icon layui-icon-add-1"></i> 新增一行
+    </button>
+</script>
+
+<script type="text/html" id="switchCfg-kind">
+    {{# if(d.swKind == 0){ }}<span class="layui-badge">0 一律旧口径</span>
+    {{# } else if(d.swKind == 1){ }}<span class="layui-badge layui-bg-green">1 一律新口径</span>
+    {{# } else if(d.swKind == 2){ }}<span class="layui-badge layui-bg-orange">2 按桶推进（{{ d.grayNum }}桶）</span>
+    {{# } else { }}<span class="layui-badge layui-bg-gray">旧行未记</span>{{# } }}
+</script>
+
+<script type="text/html" id="switchCfg-step">
+    {{# var s = d.status == null ? 0 : d.status; }}
+    {{# if(s == 0){ }}<span class="layui-badge layui-bg-gray">待上</span>
+    {{# } else if(s == 1){ }}<span class="layui-badge layui-bg-blue">已上</span>
+    {{# } else { }}<span class="layui-badge layui-bg-green">压行</span>{{# } }}
+</script>
+
+<script type="text/html" id="switchCfg-bar">
+    <button shiro:hasPermission="ctld:ctldSwitchCfg:edit" class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit" title="修改"><i class="layui-icon layui-icon-edit"></i></button>
+    <button shiro:hasPermission="ctld:ctldSwitchCfg:advance" class="pear-btn pear-btn-sm" style="background:#16baaa;color:#fff" lay-event="advance" title="往上送一步">送</button>
+    <button shiro:hasPermission="ctld:ctldSwitchCfg:revert" class="pear-btn pear-btn-warming pear-btn-sm" lay-event="revert" title="已上退回待上">退</button>
+    <button shiro:hasPermission="ctld:ctldSwitchCfg:remove" class="pear-btn pear-btn-danger pear-btn-sm" lay-event="remove" title="撤下"><i class="layui-icon layui-icon-delete"></i></button>
+</script>
+
+<th:block th:include="include :: footer"/>
+<script th:inline="javascript">
+    layui.use(['table', 'form', 'jquery'], function () {
+        let table = layui.table;
+        let form = layui.form;
+        let $ = layui.jquery;
+
+        let MODULE_PATH = rootPath + "/CtldSwitchCfgController/";
+        let CONFIG_PAGE_SIZE = [[${pageSize}]] || 10;
+
+        let cols = [[
+            {title: 'ID', field: 'id', align: 'center', hide: true},
+            {title: '代号', field: 'swNo', align: 'center', width: 170},
+            {title: '切换名目', field: 'swName', align: 'left', minWidth: 130},
+            {title: '层级', field: 'levelKind', align: 'center', width: 90},
+            {title: '分区代号', field: 'zoneNo', align: 'center', width: 100},
+            {title: '分区全称', field: 'zoneName', align: 'left', minWidth: 160},
+            {title: '三态', field: 'swKind', align: 'center', width: 150, toolbar: '#switchCfg-kind'},
+            {title: '应覆盖', field: 'crtNum', align: 'center', width: 80},
+            {title: '已切', field: 'hitNum', align: 'center', width: 70},
+            {title: '还差', field: 'lackNum', align: 'center', width: 70},
+            {title: '步子', field: 'status', align: 'center', width: 80, toolbar: '#switchCfg-step'},
+            {title: '改动次序', field: 'verNo', align: 'center', width: 90},
+            {title: '建行的人', field: 'createBy', align: 'center', width: 100},
+            {title: '改三态的人', field: 'kindBy', align: 'center', width: 100},
+            {title: '核验串', field: 'content', align: 'left', minWidth: 150},
+            {title: '操作', toolbar: '#switchCfg-bar', align: 'center', width: 170, fixed: 'right'}
+        ]];
+
+        table.render({
+            elem: '#switchCfg-table',
+            url: MODULE_PATH + 'list',
+            page: true,
+            limit: CONFIG_PAGE_SIZE,
+            method: 'get',
+            cols: cols,
+            skin: 'line',
+            toolbar: '#switchCfg-toolbar',
+            defaultToolbar: [{layEvent: 'refresh', icon: 'layui-icon-refresh'}, 'filter', 'print', 'exports']
+        });
+
+        form.on('submit(switchCfg-query)', function (data) {
+            table.reload('switchCfg-table', {where: data.field, page: {curr: 1}});
+            return false;
+        });
+
+        table.on('toolbar(switchCfg-table)', function (obj) {
+            if (obj.event === 'add') {
+                layer.open({type: 2, title: '新增一行', shade: 0.1, area: ['620px', '620px'],
+                    content: MODULE_PATH + 'add'});
+            } else if (obj.event === 'refresh') {
+                table.reload('switchCfg-table');
+            }
+        });
+
+        table.on('tool(switchCfg-table)', function (obj) {
+            if (obj.event === 'edit') {
+                layer.open({type: 2, title: '修改这一行', shade: 0.1, area: ['620px', '620px'],
+                    content: MODULE_PATH + 'edit/' + obj.data['id']});
+            } else if (obj.event === 'advance') {
+                act(MODULE_PATH + 'advance', obj.data['id'], '确定往上送一步？（待上→已上→压行，压行后不可回头）', obj);
+            } else if (obj.event === 'revert') {
+                act(MODULE_PATH + 'revert', obj.data['id'], '已上的这一步退回待上？痕迹仍留在本行进册历史里', obj);
+            } else if (obj.event === 'remove') {
+                act(MODULE_PATH + 'remove?ids=' + obj.data['id'], null, '确定就地停住这一行？已出的核验结论不追改', obj, 'DELETE');
+            }
+        });
+
+        function act(url, id, msg, obj, method) {
+            layer.confirm(msg, {icon: 3, title: '提示'}, function (index) {
+                layer.close(index);
+                let loading = layer.load();
+                $.ajax({
+                    url: url,
+                    data: id == null ? {} : {id: id},
+                    dataType: 'json',
+                    type: method || 'POST',
+                    success: function (result) {
+                        layer.close(loading);
+                        if (result.code == 200) {
+                            layer.msg(result.msg || '已落定', {icon: 1, time: 1000}, function () {
+                                table.reload('switchCfg-table');
+                            });
+                        } else {
+                            layer.msg(result.msg, {icon: 2, time: 2500});
+                        }
+                    },
+                    error: function (xhr) {
+                        layer.close(loading);
+                        layer.msg('回话异常', {icon: 2});
+                    }
+                });
+            });
+        }
+    });
+</script>
+</html>

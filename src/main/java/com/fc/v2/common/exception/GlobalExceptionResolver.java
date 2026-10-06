@@ -1,8 +1,7 @@
 package com.fc.v2.common.exception;
 
 import com.fc.v2.common.domain.AjaxResult;
-import com.fc.v2.common.exception.demo.DemoModeException;
-import com.fc.v2.util.ServletUtils;
+import com.fc.v2.common.exception.demo.DemoModeException;import com.fc.v2.util.ServletUtils;
 import org.apache.shiro.authz.AuthorizationException;
 import org.apache.shiro.authz.UnauthenticatedException;
 import org.apache.shiro.authz.UnauthorizedException;
@@ -100,6 +99,15 @@ public class GlobalExceptionResolver{
 	    return mv; 
     }
     
+    /**
+     * 切换开关行不合规矩：消息已点名是哪一栏不合，原样回话，不套"运行时异常"前缀
+     */
+    @ExceptionHandler(CtldRuleException.class)
+    public AjaxResult ctldRuleException(CtldRuleException e)
+    {
+        return AjaxResult.error(e.getMessage());
+    }
+
     /**
      * 演示模式异常
      */
